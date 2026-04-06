@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CALC-1</title>
+
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#d8d8d6">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="TE Calc1 Pro">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #c5c5c5;
+    --device-bg: #d8d8d6;
+    --device-border: #e8e8e6;
+    --screen-bg: #0d0d0d;
+    --btn-bg: #f5f5f3;
+    --btn-shadow: #b8b8b6;
+    --btn-highlight: #ffffff;
+    --orange: #f05a00;
+    --orange-dark: #c44800;
+    --green: #00ff88;
+    --green-dim: rgba(0, 255, 136, 0.7);
+    --red: #ff3b30;
+    --text-primary: #1a1a1a;
+    --text-secondary: #888888;
+    --text-muted: #aaaaaa;
+    --radius: 16px;
+    --radius-sm: 12px;
+  }
+
+  body {
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Rajdhani', sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+    padding: 20px 0;
+    overflow: hidden;
+  }
+
+  .device {
+    background: var(--device-bg);
+    border-radius: 32px;
+    padding: 20px 18px 24px;
+    width: min(360px, 94vw);
+    box-shadow:
+      0 2px 0 #fff inset,
+      0 -2px 0 #c8c8c6 inset,
+      3px 0 0 #d8d8d6 inset,
+      -3px 0 0 #d8d8d6 inset,
+      0 30px 60px rgba(0,0,0,0.2),
+      0 8px 20px rgba(0,0,0,0.1);
+    position: relative;
+  }
+
+  /* Header */
+  .device-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding: 0 6px;
+  }
+
+  .device-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: #555;
+  }
+
+  /* Mode indicator dots */
+  .mode-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .mode-pill {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 5px;
+    border-radius: 3px;
+    border: 1.5px solid currentColor;
+    opacity: 0.25;
+    color: #888;
+    transition: all 0.2s ease;
+  }
+  .mode-pill.active { 
+    opacity: 1; 
+  }
+  .mode-pill.calc-mode.active { color: #999; border-color: #999; }
+  .mode-pill.ql-mode.active { color: var(--orange); border-color: var(--orange); }
+  .mode-pill.shift-mode.active { color: var(--red); border-color: var(--red); }
+
+  /* Screen - FIXED HEIGHT */
+  .screen {
+    background: var(--screen-bg);
+    border-radius: var(--radius);
+    padding: 16px 18px 18px;
+    margin-bottom: 16px;
+    height: 120px;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+  }
+  .screen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .screen-expression {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: var(--green-dim);
+    min-height: 18px;
+    text-align: right;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .screen-result {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: clamp(38px, 12vw, 50px);
+    color: #ffffff;
+    text-align: right;
+    line-height: 1;
+    letter-spacing: -1px;
+    transition: all 0.1s ease;
+  }
+  .screen-result.error { 
+    color: var(--red); 
+    font-size: 24px; 
+  }
+
+  /* Quick-launch screen */
+  .ql-screen {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    justify-content: space-between;
+    align-items: stretch;
+    padding: 2px 0;
+  }
+  .ql-screen.visible { display: flex; }
+
+  /* Clock block */
+  .ql-clock {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex: 1;
+    justify-content: flex-end;
+  }
+
+  .ql-date-line {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--green-dim);
+    letter-spacing: 2px;
+    margin-bottom: 2px;
+  }
+
+  .ql-time-display {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: clamp(40px, 13vw, 52px);
+    color: #ffffff;
+    line-height: 1;
+    letter-spacing: -1px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+
+  /* Blinking colon */
+  .ql-colon {
+    display: inline-block;
+    animation: blink 1s step-start infinite;
+    color: #ffffff;
+    margin: 0 1px;
+    position: relative;
+    top: -2px;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.15; }
+  }
+
+  /* Seconds + AM/PM row */
+  .ql-time-sub {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 3px;
+  }
+  .ql-seconds {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--green-dim);
+    letter-spacing: 1px;
+  }
+  .ql-ampm {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--orange);
+    letter-spacing: 2px;
+    border: 1px solid rgba(240,90,0,0.4);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+
+  /* Status bar bottom of screen */
+  .ql-status {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 8px;
+    color: var(--green-dim);
+    opacity: 0.5;
+    letter-spacing: 2px;
+    margin-top: 6px;
+    text-align: left;
+  }
+
+  .ql-launched {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--green);
+    letter-spacing: 1px;
+    min-height: 14px;
+    text-align: left;
+  }
+
+  /* Keypad grid - FIXED HEIGHT */
+  .keypad {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: 420px;
+    min-height: 420px;
+  }
+
+  .row {
+    display: flex;
+    gap: 10px;
+    flex: 1;
+  }
+
+  /* Base button */
+  .btn {
+    flex: 1;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--btn-bg);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow:
+      0 3px 0 var(--btn-shadow),
+      0 4px 8px rgba(0,0,0,0.08),
+      0 -1px 0 var(--btn-highlight) inset;
+    transition: all 0.08s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    overflow: hidden;
+  }
+
+  .btn:active, .btn.pressed {
+    transform: translateY(2px);
+    box-shadow: 
+      0 1px 0 var(--btn-shadow), 
+      0 2px 4px rgba(0,0,0,0.06),
+      0 -1px 0 var(--btn-highlight) inset;
+  }
+
+  .btn-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1;
+  }
+
+  .btn-shift-label {
+    position: absolute;
+    top: 5px;
+    right: 7px;
+    font-size: 8px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.3px;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  /* Show shift labels when shift active */
+  body.shift-on .btn-shift-label { opacity: 1; }
+  body.shift-on .btn-label { opacity: 0.5; }
+
+  /* Orange operator buttons */
+  .btn.op {
+    background: #fff8f5;
+  }
+  .btn.op .btn-label { 
+    color: var(--orange); 
+    font-weight: 600;
+  }
+
+  /* Equals button — full orange */
+  .btn.equals {
+    background: var(--orange);
+    box-shadow: 
+      0 3px 0 var(--orange-dark), 
+      0 4px 8px rgba(240,90,0,0.25),
+      0 -1px 0 rgba(255,255,255,0.2) inset;
+    flex: 2;
+    aspect-ratio: auto;
+    border-radius: var(--radius-sm);
+  }
+  .btn.equals:active {
+    box-shadow: 
+      0 1px 0 var(--orange-dark), 
+      0 2px 4px rgba(240,90,0,0.15),
+      0 -1px 0 rgba(255,255,255,0.2) inset;
+  }
+  .btn.equals .btn-label { 
+    color: #fff; 
+    font-size: 28px; 
+    font-weight: 600;
+  }
+
+  /* Shift button — pill shape */
+  .btn.shift-btn {
+    flex: 2;
+    aspect-ratio: auto;
+    border-radius: 50px;
+  }
+  .btn.shift-btn .btn-label { 
+    font-size: 15px; 
+    font-weight: 600; 
+    letter-spacing: 1px; 
+    color: #666; 
+  }
+  .btn.shift-btn.active {
+    background: var(--orange);
+    box-shadow: 
+      0 3px 0 var(--orange-dark), 
+      0 4px 8px rgba(240,90,0,0.25),
+      0 -1px 0 rgba(255,255,255,0.2) inset;
+  }
+  .btn.shift-btn.active .btn-label { 
+    color: #fff; 
+  }
+
+  /* Clear / backspace */
+  .btn.fn .btn-label { 
+    font-size: 20px; 
+    color: #666; 
+  }
+
+  /* QL icon display on button */
+  .btn.ql-slot {
+    background: #f0f0ee;
+    position: relative;
+  }
+  .btn.ql-slot .ql-icon {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    line-height: 1;
+  }
+  .btn.ql-slot .ql-icon img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    filter: none;
+  }
+  .btn.ql-slot .ql-name {
+    font-size: 7px;
+    color: #888;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+    max-width: 90%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0 2px;
+  }
+  .btn.ql-slot.empty .ql-icon { opacity: 0.25; }
+  .btn.ql-slot.empty .ql-icon::after {
+    content: '+';
+    font-size: 22px;
+    color: #aaa;
+  }
+  .btn.ql-slot .edit-hint {
+    position: absolute;
+    inset: 0;
+    background: transparent;
+    border-radius: var(--radius-sm);
+    border: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  body.ql-mode .btn.ql-slot .edit-hint { opacity: 0; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+    padding: 0 16px 24px;
+  }
+  .modal-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .modal {
+    background: #f5f5f3;
+    border-radius: 24px;
+    padding: 24px 20px 20px;
+    width: min(360px, 100%);
+    transform: translateY(30px);
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow: 
+      0 20px 60px rgba(0,0,0,0.3),
+      0 2px 0 #fff inset;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+
+  .modal h3 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #333;
+    margin-bottom: 16px;
+  }
+
+  .modal label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    color: #888;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+  }
+
+  .modal input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1.5px solid #ddd;
+    background: #fff;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    color: #333;
+    outline: none;
+    margin-bottom: 14px;
+    transition: border-color 0.2s;
+  }
+  .modal input:focus { border-color: var(--orange); }
+
+  /* Icon source tabs */
+  .icon-source-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .icon-source-tab {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1.5px solid #ddd;
+    background: #fff;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: #888;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .icon-source-tab.active {
+    background: var(--orange);
+    border-color: var(--orange);
+    color: #fff;
+  }
+
+  /* Icon picker sections */
+  .icon-picker-section {
+    display: none;
+    margin-bottom: 16px;
+  }
+  .icon-picker-section.active {
+    display: block;
+  }
+
+  .icon-picker {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 6px;
+    max-height: 160px;
+    overflow-y: auto;
+    padding: 4px;
+  }
+
+  .icon-option {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .icon-option:hover { 
+    background: #fff5f0; 
+    border-color: #ffd4c0;
+  }
+  .icon-option.selected { 
+    border-color: var(--orange); 
+    background: #fff5f0;
+  }
+
+  /* Favicon preview */
+  .favicon-preview {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    background: #fff;
+    border-radius: 12px;
+    border: 1.5px dashed #ddd;
+    margin-bottom: 16px;
+  }
+  .favicon-preview img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    filter: grayscale(100%) contrast(1.2);
+  }
+  .favicon-preview-text {
+    font-size: 11px;
+    color: #888;
+    line-height: 1.5;
+  }
+  .favicon-preview-text span {
+    color: var(--green-dim);
+  }
+
+  /* Custom icon URL input */
+  .custom-icon-input {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .custom-icon-input input {
+    flex: 1;
+    margin-bottom: 0;
+  }
+  .custom-icon-btn {
+    padding: 12px 16px;
+    background: #fff;
+    border: 1.5px solid #ddd;
+    border-radius: 12px;
+    color: #666;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .custom-icon-btn:hover {
+    border-color: var(--orange);
+    color: var(--orange);
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-modal {
+    flex: 1;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+  .btn-modal:active { opacity: 0.8; }
+  .btn-modal.cancel { 
+    background: #e8e8e6; 
+    color: #666; 
+  }
+  .btn-modal.save { 
+    background: var(--orange); 
+    color: #fff; 
+  }
+  .btn-modal.clear-btn { 
+    background: #ffe8e8; 
+    color: var(--red); 
+  }
+
+  /* Mode toggle hint */
+  .device-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 12px;
+    gap: 12px;
+  }
+  .footer-hint {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: #999;
+    font-weight: 500;
+  }
+
+  /* Animations */
+  @keyframes numPop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.04); }
+    100% { transform: scale(1); }
+  }
+  .pop { animation: numPop 0.15s ease; }
+
+
+  /* Quick Launcher: keep same button color as regular keys */
+  .btn.ql-slot,
+  body.ql-mode .btn.ql-slot {
+    background: var(--btn-bg) !important;
+    filter: none !important;
+    opacity: 1 !important;
+  }
+
+  .btn.ql-slot .edit-hint,
+  body.ql-mode .btn.ql-slot .edit-hint {
+    opacity: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .btn.ql-slot .ql-icon img,
+  body.ql-mode .btn.ql-slot .ql-icon img {
+    filter: none !important;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="device">
+  <div class="device-header">
+    <div class="device-label">CALC–1</div>
+    <div class="mode-bar">
+      <div class="mode-pill calc-mode active" id="pill-calc">CALC</div>
+      <div class="mode-pill ql-mode" id="pill-ql">QL</div>
+      <div class="mode-pill shift-mode" id="pill-shift">SHIFT</div>
+    </div>
+  </div>
+
+  <!-- Screen -->
+  <div class="screen">
+    <!-- CALC display -->
+    <div id="calc-display">
+      <div class="screen-expression" id="expression"></div>
+      <div class="screen-result" id="result">0</div>
+    </div>
+    <!-- QL display -->
+    <div class="ql-screen" id="ql-display">
+      <div class="ql-clock">
+        <div class="ql-date-line" id="ql-date">MON 06 APR</div>
+        <div class="ql-time-display">
+          <span id="ql-hours">00</span><span class="ql-colon">:</span><span id="ql-minutes">00</span>
+        </div>
+        <div class="ql-time-sub">
+          <span class="ql-seconds" id="ql-secs">:00</span>
+          <span class="ql-ampm" id="ql-ampm">AM</span>
+        </div>
+      </div>
+      <div class="ql-launched" id="ql-launched"></div>
+      <div class="ql-status">QUICK LAUNCH ▸ HOLD TO EDIT</div>
+    </div>
+  </div>
+
+  <!-- Keypad -->
+  <div class="keypad" id="keypad">
+
+    <!-- Row 1: C, ←, shift -->
+    <div class="row">
+      <div class="btn fn" data-action="clear"><span class="btn-label">C</span></div>
+      <div class="btn fn" data-action="backspace"><span class="btn-label">←</span></div>
+      <div class="btn shift-btn" id="shift-btn" data-action="shift"><span class="btn-label">shift</span></div>
+    </div>
+
+    <!-- Row 2: +/-, %, x², ÷ -->
+    <div class="row">
+      <div class="btn" data-action="plusminus" data-shift="1/x">
+        <span class="btn-shift-label">1/x</span>
+        <span class="btn-label">+/−</span>
+      </div>
+      <div class="btn" data-action="percent" data-shift="x!">
+        <span class="btn-shift-label">x!</span>
+        <span class="btn-label">%</span>
+      </div>
+      <div class="btn" data-action="square" data-shift="xʸ">
+        <span class="btn-shift-label">xʸ</span>
+        <span class="btn-label">x²</span>
+      </div>
+      <div class="btn op" data-action="÷" data-shift="x²">
+        <span class="btn-label">÷</span>
+      </div>
+    </div>
+
+    <!-- Row 3: 7, 8, 9, × -->
+    <div class="row">
+      <div class="btn" data-action="7" data-shift="[">
+        <span class="btn-shift-label">[</span>
+        <span class="btn-label">7</span>
+      </div>
+      <div class="btn" data-action="8" data-shift="]">
+        <span class="btn-shift-label">]</span>
+        <span class="btn-label">8</span>
+      </div>
+      <div class="btn" data-action="9" data-shift="√x">
+        <span class="btn-shift-label">√x</span>
+        <span class="btn-label">9</span>
+      </div>
+      <div class="btn op" data-action="×">
+        <span class="btn-label">×</span>
+      </div>
+    </div>
+
+    <!-- Row 4: 4, 5, 6, − -->
+    <div class="row">
+      <div class="btn" data-action="4" data-shift="sin">
+        <span class="btn-shift-label">sin</span>
+        <span class="btn-label">4</span>
+      </div>
+      <div class="btn" data-action="5" data-shift="cos">
+        <span class="btn-shift-label">cos</span>
+        <span class="btn-label">5</span>
+      </div>
+      <div class="btn" data-action="6" data-shift="tan">
+        <span class="btn-shift-label">tan</span>
+        <span class="btn-label">6</span>
+      </div>
+      <div class="btn op" data-action="−">
+        <span class="btn-label">−</span>
+      </div>
+    </div>
+
+    <!-- Row 5: 1, 2, 3, + -->
+    <div class="row">
+      <div class="btn" data-action="1" data-shift="log">
+        <span class="btn-shift-label">log</span>
+        <span class="btn-label">1</span>
+      </div>
+      <div class="btn" data-action="2" data-shift="ln">
+        <span class="btn-shift-label">ln</span>
+        <span class="btn-label">2</span>
+      </div>
+      <div class="btn" data-action="3" data-shift="eˣ">
+        <span class="btn-shift-label">eˣ</span>
+        <span class="btn-label">3</span>
+      </div>
+      <div class="btn op" data-action="+">
+        <span class="btn-label">+</span>
+      </div>
+    </div>
+
+    <!-- Row 6: 0, ., = -->
+    <div class="row">
+      <div class="btn" data-action="0" data-shift="π">
+        <span class="btn-shift-label">π</span>
+        <span class="btn-label">0</span>
+      </div>
+      <div class="btn" data-action="." data-shift="e">
+        <span class="btn-shift-label">e</span>
+        <span class="btn-label">.</span>
+      </div>
+      <div class="btn equals" data-action="=">
+        <span class="btn-label">=</span>
+      </div>
+    </div>
+
+  </div><!-- /keypad -->
+
+  <!-- QL Keypad (hidden by default) -->
+  <div class="keypad" id="ql-keypad" style="display:none">
+    <div class="row">
+      <div class="btn fn" data-ql-action="back"><span class="btn-label" style="font-size:18px;color:#666">←</span></div>
+      <div class="btn shift-btn" style="flex:2;border-radius:50px;cursor:default;background:#e8e8e6;box-shadow:none">
+        <span class="btn-label" style="font-size:12px;color:#aaa;letter-spacing:1px">HOLD TO EDIT</span>
+      </div>
+    </div>
+
+    <div class="row" id="ql-row-1"></div>
+    <div class="row" id="ql-row-2"></div>
+    <div class="row" id="ql-row-3"></div>
+    <div class="row" id="ql-row-4"></div>
+    <div class="row" id="ql-row-5"></div>
+  </div>
+
+  <div class="device-footer">
+    <span class="footer-hint" id="mode-hint">SHIFT + = FOR QUICKLAUNCH</span>
+  </div>
+</div>
+
+<!-- Edit modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h3>CONFIGURE SLOT</h3>
+    <label>App Name</label>
+    <input type="text" id="modal-name" placeholder="My App" maxlength="20">
+    <label>URL</label>
+    <input type="url" id="modal-url" placeholder="https://example.com" inputmode="url">
+    
+    <!-- Icon source tabs -->
+    <div class="icon-source-tabs">
+      <button class="icon-source-tab active" data-tab="emoji">Emoji</button>
+      <button class="icon-source-tab" data-tab="favicon">Favicon</button>
+      <button class="icon-source-tab" data-tab="custom">Custom</button>
+    </div>
+    
+    <!-- Emoji picker -->
+    <div class="icon-picker-section active" id="tab-emoji">
+      <div class="icon-picker" id="icon-picker"></div>
+    </div>
+    
+    <!-- Favicon preview -->
+    <div class="icon-picker-section" id="tab-favicon">
+      <div class="favicon-preview" id="favicon-preview">
+        <div style="width:32px;height:32px;background:#f0f0ee;border-radius:8px;display:flex;align-items:center;justify-content:center">
+          <span style="font-size:16px;color:#aaa">?</span>
+        </div>
+        <div class="favicon-preview-text">Enter URL to auto-fetch favicon<br><span>Will be displayed in B&W</span></div>
+      </div>
+    </div>
+    
+    <!-- Custom icon URL -->
+    <div class="icon-picker-section" id="tab-custom">
+      <div class="custom-icon-input">
+        <input type="url" id="modal-custom-icon" placeholder="https://example.com/icon.png" inputmode="url">
+        <button class="custom-icon-btn" id="preview-custom-btn">Preview</button>
+      </div>
+      <div class="favicon-preview" id="custom-preview" style="display:none">
+        <img src="" alt="custom" id="custom-preview-img">
+        <div class="favicon-preview-text">Custom icon preview<br><span>Will be displayed in B&W</span></div>
+      </div>
+    </div>
+    
+    <div class="modal-actions">
+      <button class="btn-modal clear-btn" id="modal-clear">Clear</button>
+      <button class="btn-modal cancel" id="modal-cancel">Cancel</button>
+      <button class="btn-modal save" id="modal-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── State ────────────────────────────────────────────────────
+const ICONS = ['🌐','🔍','📧','💬','📁','🎵','🎬','📷','📰','📊','🛒','💳','🏠','🔐','🗓️','⚡','🤖','🌙','🚀','📌','📚','💡','🎮','🔔','🗺️','💰','🛠️','📡','🏋️','✈️','🍕','☕','🌿','🎨','🔗','📱','💻','🖥️','🖨️','📀','💾','🔋','📻','📺','🎙️','🎧','🎤','🎸','🎹','🥁','🎲','🎯','🎳','🎰','🎪','🎭','🎬'];
+
+let display = '0';
+let expression = '';
+let waitingForOperand = false;
+let operator = null;
+let operand1 = null;
+let shiftOn = false;
+let qlMode = false;
+let currentModalSlot = null;
+let currentIconSource = 'emoji';
+let selectedEmoji = ICONS[0];
+let faviconUrl = null;
+let customIconUrl = null;
+
+// QL slots storage
+let qlSlots = JSON.parse(localStorage.getItem('calc1_ql') || 'null') || Array(18).fill(null);
+
+// ─── Calc logic ───────────────────────────────────────────────
+function updateScreen() {
+  const resultEl = document.getElementById('result');
+  const exprEl = document.getElementById('expression');
+  resultEl.textContent = display;
+  exprEl.textContent = expression;
+  resultEl.classList.remove('error');
+}
+
+function calcOp(a, op, b) {
+  switch(op) {
+    case '+': return a + b;
+    case '−': return a - b;
+    case '×': return a * b;
+    case '÷': return b === 0 ? null : a / b;
+  }
+}
+
+function fmtNum(n) {
+  if (Math.abs(n) >= 1e12 || (Math.abs(n) < 1e-6 && n !== 0)) return n.toExponential(4);
+  let s = parseFloat(n.toPrecision(10)).toString();
+  return s;
+}
+
+function handleCalc(action) {
+  const digits = ['0','1','2','3','4','5','6','7','8','9','.'];
+  const ops = ['+','−','×','÷'];
+
+  if (shiftOn && action !== 'shift' && action !== '=' && !ops.includes(action) && !digits.includes(action)) {
+    handleShiftAction(action);
+    return;
+  }
+
+  if (digits.includes(action)) {
+    if (action === '.' && display.includes('.')) return;
+    if (waitingForOperand) {
+      display = action === '.' ? '0.' : action;
+      waitingForOperand = false;
+    } else {
+      display = display === '0' && action !== '.' ? action : display + action;
+    }
+    if (display.length > 12) return;
+    updateScreen();
+    return;
+  }
+
+  if (action === 'clear') {
+    display = '0'; expression = ''; operator = null; operand1 = null; waitingForOperand = false;
+    updateScreen(); return;
+  }
+
+  if (action === 'backspace') {
+    if (waitingForOperand) return;
+    display = display.length > 1 ? display.slice(0,-1) : '0';
+    updateScreen(); return;
+  }
+
+  if (action === 'plusminus') {
+    display = display.startsWith('-') ? display.slice(1) : '-' + display;
+    updateScreen(); return;
+  }
+
+  if (action === 'percent') {
+    display = fmtNum(parseFloat(display) / 100);
+    updateScreen(); return;
+  }
+
+  if (action === 'square') {
+    const v = parseFloat(display);
+    expression = display + '²';
+    display = fmtNum(v * v);
+    waitingForOperand = true;
+    updateScreen(); return;
+  }
+
+  if (ops.includes(action)) {
+    if (operator && !waitingForOperand) {
+      const result = calcOp(operand1, operator, parseFloat(display));
+      if (result === null) { display = 'ERR:DIV/0'; document.getElementById('result').classList.add('error'); expression = ''; operator = null; return; }
+      display = fmtNum(result); operand1 = result;
+    } else {
+      operand1 = parseFloat(display);
+    }
+    operator = action;
+    expression = display + ' ' + action;
+    waitingForOperand = true;
+    updateScreen(); return;
+  }
+
+  if (action === '=') {
+    if (shiftOn) { toggleQL(); return; }
+    if (!operator) return;
+    const b = parseFloat(display);
+    const result = calcOp(operand1, operator, b);
+    if (result === null) { display = 'ERR:DIV/0'; document.getElementById('result').classList.add('error'); expression = ''; operator = null; return; }
+    expression = operand1 + ' ' + operator + ' ' + b + ' =';
+    display = fmtNum(result);
+    operator = null; operand1 = null; waitingForOperand = true;
+    updateScreen();
+    animatePop(); return;
+  }
+}
+
+function handleShiftAction(action) {
+  const v = parseFloat(display);
+  let result;
+  switch(action) {
+    case '1/x': result = v === 0 ? null : 1/v; expression = '1/' + display; break;
+    case 'x!': result = factorial(Math.round(v)); expression = display + '!'; break;
+    case 'xʸ': operator = 'pow'; operand1 = v; expression = display + ' ^'; waitingForOperand = true; toggleShift(); updateScreen(); return;
+    case '√x': result = v < 0 ? null : Math.sqrt(v); expression = '√(' + display + ')'; break;
+    case 'sin': result = Math.sin(v * Math.PI / 180); expression = 'sin(' + display + '°)'; break;
+    case 'cos': result = Math.cos(v * Math.PI / 180); expression = 'cos(' + display + '°)'; break;
+    case 'tan': result = Math.tan(v * Math.PI / 180); expression = 'tan(' + display + '°)'; break;
+    case 'log': result = v <= 0 ? null : Math.log10(v); expression = 'log(' + display + ')'; break;
+    case 'ln': result = v <= 0 ? null : Math.log(v); expression = 'ln(' + display + ')'; break;
+    case 'eˣ': result = Math.exp(v); expression = 'e^' + display; break;
+    case 'π': display = fmtNum(Math.PI); waitingForOperand = false; updateScreen(); toggleShift(); return;
+    case 'e': display = fmtNum(Math.E); waitingForOperand = false; updateScreen(); toggleShift(); return;
+    default: toggleShift(); return;
+  }
+  if (result === null) { display = 'ERR'; document.getElementById('result').classList.add('error'); }
+  else { display = fmtNum(result); }
+  waitingForOperand = true;
+  toggleShift();
+  updateScreen();
+}
+
+function factorial(n) {
+  if (n < 0 || n > 20) return null;
+  let r = 1; for (let i = 2; i <= n; i++) r *= i; return r;
+}
+
+function animatePop() {
+  const r = document.getElementById('result');
+  r.classList.remove('pop');
+  void r.offsetWidth;
+  r.classList.add('pop');
+}
+
+// ─── Shift ────────────────────────────────────────────────────
+function toggleShift() {
+  shiftOn = !shiftOn;
+  document.body.classList.toggle('shift-on', shiftOn);
+  document.getElementById('shift-btn').classList.toggle('active', shiftOn);
+  document.getElementById('pill-shift').classList.toggle('active', shiftOn);
+}
+
+// ─── Quick Launch ─────────────────────────────────────────────
+function toggleQL() {
+  if (shiftOn) toggleShift();
+  qlMode = !qlMode;
+  document.body.classList.toggle('ql-mode', qlMode);
+  document.getElementById('keypad').style.display = qlMode ? 'none' : 'flex';
+  document.getElementById('ql-keypad').style.display = qlMode ? 'flex' : 'none';
+  document.getElementById('calc-display').style.display = qlMode ? 'none' : 'block';
+  document.getElementById('ql-display').classList.toggle('visible', qlMode);
+  document.getElementById('pill-calc').classList.toggle('active', !qlMode);
+  document.getElementById('pill-ql').classList.toggle('active', qlMode);
+  document.getElementById('mode-hint').textContent = qlMode ? 'HOLD A SLOT TO CONFIGURE' : 'SHIFT + = FOR QUICKLAUNCH';
+}
+
+// ─── QL Slots ─────────────────────────────────────────────────
+function buildQLKeypad() {
+  const rows = [
+    [0,1,2,3],
+    [4,5,6,7],
+    [8,9,10,11],
+    [12,13,14],
+    [15,16,17]
+  ];
+  rows.forEach((slotIndices, ri) => {
+    const rowEl = document.getElementById('ql-row-' + (ri+1));
+    rowEl.innerHTML = '';
+    slotIndices.forEach((si, ci) => {
+      const btn = createQLSlotBtn(si);
+      if (ri === 4 && ci === 2) { btn.style.flex = '2'; btn.style.aspectRatio = 'auto'; }
+      rowEl.appendChild(btn);
+    });
+  });
+}
+
+function createQLSlotBtn(index) {
+  const slot = qlSlots[index];
+  const btn = document.createElement('div');
+  btn.className = 'btn ql-slot' + (slot ? '' : ' empty');
+  btn.dataset.qlIndex = index;
+
+  const editHint = document.createElement('div');
+  editHint.className = 'edit-hint';
+  btn.appendChild(editHint);
+
+  const iconEl = document.createElement('div');
+  iconEl.className = 'ql-icon';
+  
+  if (slot) {
+    if (slot.iconType === 'emoji') {
+      iconEl.textContent = slot.icon;
+    } else if (slot.iconType === 'favicon' || slot.iconType === 'custom') {
+      const img = document.createElement('img');
+      img.src = slot.iconUrl || slot.icon;
+      img.alt = '';
+      img.onerror = () => {
+        iconEl.innerHTML = '';
+        iconEl.textContent = '🌐';
+      };
+      iconEl.appendChild(img);
+    } else {
+      iconEl.textContent = slot.icon || '🌐';
+    }
+  }
+  btn.appendChild(iconEl);
+
+  const nameEl = document.createElement('div');
+  nameEl.className = 'ql-name';
+  nameEl.textContent = slot ? slot.name : '';
+  btn.appendChild(nameEl);
+
+  // Tap = launch
+  btn.addEventListener('click', (e) => {
+    if (slot && slot.url) {
+      document.getElementById('ql-launched').textContent = '▶ ' + (slot.name || slot.url).toUpperCase();
+      setTimeout(() => { document.getElementById('ql-launched').textContent = ''; }, 2500);
+      window.open(slot.url, '_blank');
+    }
+  });
+
+  // Long press = configure
+  let pressTimer;
+  btn.addEventListener('pointerdown', () => {
+    pressTimer = setTimeout(() => { openModal(index); }, 600);
+  });
+  btn.addEventListener('pointerup', () => clearTimeout(pressTimer));
+  btn.addEventListener('pointerleave', () => clearTimeout(pressTimer));
+
+  return btn;
+}
+
+// ─── Favicon fetching ─────────────────────────────────────────
+function getFaviconUrl(url) {
+  try {
+    const urlObj = new URL(url.startsWith('http') ? url : 'https://' + url);
+    return `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=64`;
+  } catch (e) {
+    return null;
+  }
+}
+
+function updateFaviconPreview() {
+  const urlInput = document.getElementById('modal-url').value.trim();
+  const previewEl = document.getElementById('favicon-preview');
+  
+  if (!urlInput) {
+    previewEl.innerHTML = `
+      <div style="width:32px;height:32px;background:#f0f0ee;border-radius:8px;display:flex;align-items:center;justify-content:center">
+        <span style="font-size:16px;color:#aaa">?</span>
+      </div>
+      <div class="favicon-preview-text">Enter URL to auto-fetch favicon<br><span>Will be displayed in B&W</span></div>
+    `;
+    faviconUrl = null;
+    return;
+  }
+  
+  faviconUrl = getFaviconUrl(urlInput);
+  if (faviconUrl) {
+    previewEl.innerHTML = `
+      <img src="${faviconUrl}" alt="favicon" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+      <div style="width:32px;height:32px;background:#f0f0ee;border-radius:8px;display:flex;align-items:center;justify-content:center;display:none">
+        <span style="font-size:16px;color:#aaa">!</span>
+      </div>
+      <div class="favicon-preview-text">Favicon detected<br><span>Will be displayed in B&W</span></div>
+    `;
+  }
+}
+
+// ─── Modal ────────────────────────────────────────────────────
+function buildIconPicker(selectedIcon) {
+  const picker = document.getElementById('icon-picker');
+  picker.innerHTML = '';
+  ICONS.forEach(ic => {
+    const el = document.createElement('div');
+    el.className = 'icon-option' + (ic === selectedIcon ? ' selected' : '');
+    el.textContent = ic;
+    el.addEventListener('click', () => {
+      picker.querySelectorAll('.icon-option').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedEmoji = ic;
+    });
+    picker.appendChild(el);
+  });
+}
+
+function switchIconTab(tab) {
+  currentIconSource = tab;
+  document.querySelectorAll('.icon-source-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  document.querySelectorAll('.icon-picker-section').forEach(s => s.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
+}
+
+function openModal(slotIndex) {
+  currentModalSlot = slotIndex;
+  const slot = qlSlots[slotIndex];
+  document.getElementById('modal-name').value = slot ? slot.name : '';
+  document.getElementById('modal-url').value = slot ? slot.url : '';
+  document.getElementById('modal-custom-icon').value = '';
+  document.getElementById('custom-preview').style.display = 'none';
+  
+  switchIconTab('emoji');
+  
+  if (slot && slot.iconType === 'emoji') {
+    selectedEmoji = slot.icon || ICONS[0];
+  } else {
+    selectedEmoji = ICONS[0];
+  }
+  buildIconPicker(selectedEmoji);
+  
+  updateFaviconPreview();
+  
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  currentModalSlot = null;
+  faviconUrl = null;
+  customIconUrl = null;
+}
+
+// Tab switching
+document.querySelectorAll('.icon-source-tab').forEach(tab => {
+  tab.addEventListener('click', () => switchIconTab(tab.dataset.tab));
+});
+
+// URL input change - update favicon preview
+document.getElementById('modal-url').addEventListener('input', updateFaviconPreview);
+
+// Custom icon preview
+document.getElementById('preview-custom-btn').addEventListener('click', () => {
+  const url = document.getElementById('modal-custom-icon').value.trim();
+  if (url) {
+    customIconUrl = url;
+    const preview = document.getElementById('custom-preview');
+    const img = document.getElementById('custom-preview-img');
+    img.src = url;
+    preview.style.display = 'flex';
+    img.onerror = () => {
+      preview.innerHTML = '<div class="favicon-preview-text"><span>Failed to load image</span></div>';
+    };
+  }
+});
+
+document.getElementById('modal-cancel').addEventListener('click', closeModal);
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+});
+
+document.getElementById('modal-clear').addEventListener('click', () => {
+  if (currentModalSlot === null) return;
+  qlSlots[currentModalSlot] = null;
+  saveQL();
+  buildQLKeypad();
+  closeModal();
+});
+
+document.getElementById('modal-save').addEventListener('click', () => {
+  if (currentModalSlot === null) return;
+  const name = document.getElementById('modal-name').value.trim();
+  let url = document.getElementById('modal-url').value.trim();
+  if (!url) { document.getElementById('modal-url').focus(); return; }
+  if (!url.startsWith('http')) url = 'https://' + url;
+  
+  let iconData = {};
+  
+  if (currentIconSource === 'emoji') {
+    iconData = { iconType: 'emoji', icon: selectedEmoji };
+  } else if (currentIconSource === 'favicon') {
+    const favUrl = getFaviconUrl(url);
+    iconData = { iconType: 'favicon', iconUrl: favUrl, icon: '🌐' };
+  } else if (currentIconSource === 'custom') {
+    const customUrl = document.getElementById('modal-custom-icon').value.trim();
+    if (customUrl) {
+      iconData = { iconType: 'custom', iconUrl: customUrl, icon: '🌐' };
+    } else {
+      iconData = { iconType: 'emoji', icon: selectedEmoji };
+    }
+  }
+  
+  qlSlots[currentModalSlot] = { 
+    name: name || new URL(url).hostname.replace(/^www\./, ''), 
+    url, 
+    ...iconData 
+  };
+  saveQL();
+  buildQLKeypad();
+  closeModal();
+});
+
+function saveQL() {
+  localStorage.setItem('calc1_ql', JSON.stringify(qlSlots));
+}
+
+// ─── Button interactions ───────────────────────────────────────
+document.querySelectorAll('#keypad .btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const action = btn.dataset.action;
+    if (!action) return;
+    if (action === 'shift') { toggleShift(); return; }
+    if (shiftOn && btn.dataset.shift && action !== '=' && !['clear','backspace'].includes(action)) {
+      handleCalc(btn.dataset.shift);
+    } else {
+      handleCalc(action);
+    }
+  });
+});
+
+// QL back button
+document.querySelector('[data-ql-action="back"]')?.addEventListener('click', toggleQL);
+
+// ─── Clock ────────────────────────────────────────────────────
+const DAYS = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+function updateClock() {
+  const now = new Date();
+  let h = now.getHours();
+  const m = now.getMinutes();
+  const s = now.getSeconds();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  document.getElementById('ql-hours').textContent = String(h).padStart(2,'0');
+  document.getElementById('ql-minutes').textContent = String(m).padStart(2,'0');
+  document.getElementById('ql-secs').textContent = ':' + String(s).padStart(2,'0');
+  document.getElementById('ql-ampm').textContent = ampm;
+  const day = DAYS[now.getDay()];
+  const date = String(now.getDate()).padStart(2,'0');
+  const month = MONTHS[now.getMonth()];
+  document.getElementById('ql-date').textContent = `${day} ${date} ${month}`;
+}
+
+// ─── Init ─────────────────────────────────────────────────────
+buildQLKeypad();
+updateScreen();
+updateClock();
+setInterval(updateClock, 1000);
+</script>
+
+<script>
+(function(){
+  const isExternal = (url) => {
+    try {
+      const u = new URL(url, location.href);
+      return u.origin !== location.origin;
+    } catch(e) { return false; }
+  };
+
+  document.addEventListener('click', function(e){
+    const a = e.target.closest('a[href]');
+    if(!a) return;
+    if(isExternal(a.href)) {
+      a.setAttribute('target','_blank');
+      a.setAttribute('rel','noopener noreferrer');
+    }
+  }, true);
+
+  const originalOpen = window.open;
+  window.open = function(url, target, features){
+    try {
+      const u = new URL(url, location.href);
+      if (u.origin !== location.origin) {
+        return originalOpen.call(window, u.href, '_blank', features || 'noopener,noreferrer');
+      }
+    } catch(e) {}
+    return originalOpen.call(window, url, target || '_self', features);
+  };
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('./service-worker.js');
+    });
+  }
+})();
+</script>
+
+</body>
+</html>
